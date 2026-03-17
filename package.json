@@ -1,0 +1,35 @@
+{
+  "name": "dotghost",
+  "version": "1.0.0",
+  "description": "Ghost your AI agent config into any repo. Symlinks, invisible to Git, reversible.",
+  "type": "module",
+  "bin": {
+    "dotghost": "index.js"
+  },
+  "files": [
+    "index.js"
+  ],
+  "keywords": [
+    "cli",
+    "symlink",
+    "dotfiles",
+    "ai",
+    "agents",
+    "cursor",
+    "copilot",
+    "codex",
+    "claude",
+    "agentic",
+    "dotghost"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NicholasCullenCooper/dotghost.git"
+  },
+  "homepage": "https://github.com/NicholasCullenCooper/dotghost#readme",
+  "author": "Nicholas Cullen Cooper",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
