@@ -128,22 +128,6 @@ function addExclusion(filename) {
   return true;
 }
 
-function removeExclusion(filename) {
-  const lines = readExclude();
-  const filtered = [];
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim() === filename) {
-      if (filtered.length > 0 && filtered[filtered.length - 1].trim() === MANAGED_COMMENT) {
-        filtered.pop();
-      }
-      continue;
-    }
-    filtered.push(lines[i]);
-  }
-  const cleaned = filtered.join("\n").replace(/\n{3,}/g, "\n\n");
-  fs.writeFileSync(GIT_EXCLUDE_FILE, cleaned.endsWith("\n") ? cleaned : cleaned + "\n");
-}
-
 // ---------------------------------------------------------------------------
 // Stash management
 // ---------------------------------------------------------------------------

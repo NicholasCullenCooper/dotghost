@@ -41,6 +41,40 @@ dotghost push
 dotghost diff
 ```
 
+## Release
+
+This repo publishes to npm when a GitHub Release is published. The workflow is defined in [.github/workflows/publish.yml](.github/workflows/publish.yml).
+
+If you use [just](https://github.com/casey/just), you can automate the local release steps with:
+
+```bash
+just release
+```
+
+What it does:
+
+1. Checks that `git`, `npm`, `node`, and `gh` are installed.
+2. Refuses to run unless you are on `main`.
+3. Refuses to run if your working tree is dirty.
+4. Runs `npm version patch` by default, which creates the version commit and tag.
+5. Pushes `main` and tags.
+6. Creates a published GitHub Release with generated notes, which triggers npm publishing.
+
+Before releasing, commit your changes normally:
+
+```bash
+git add -A
+git commit -m "your change"
+just release
+```
+
+You can choose a different semver bump or commit message:
+
+```bash
+just release minor
+just release patch "chore: release prep"
+```
+
 ## Your registry
 
 Populate `~/.dotghost` with the files you want available everywhere:
