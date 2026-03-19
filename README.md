@@ -68,11 +68,11 @@ git commit -m "your change"
 just release
 ```
 
-You can choose a different semver bump or commit message:
+You can choose a different semver bump:
 
 ```bash
 just release minor
-just release patch "chore: release prep"
+just release major
 ```
 
 ## Your registry
