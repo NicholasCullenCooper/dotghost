@@ -1,6 +1,6 @@
 {
   "name": "dotghost",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ghost your AI agent config into any repo. Symlinks, invisible to Git, reversible.",
   "type": "module",
   "bin": {
