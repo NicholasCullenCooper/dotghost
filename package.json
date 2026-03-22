@@ -4,11 +4,18 @@
   "description": "Keep AGENTS.md, agents, commands, workflows, and skills in sync across repos.",
   "type": "module",
   "bin": {
-    "dotghost": "index.js"
+    "dotghost": "dist/index.js"
   },
+  "main": "./dist/index.js",
+  "exports": "./dist/index.js",
   "files": [
-    "index.js"
+    "dist"
   ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepare": "npm run build"
+  },
   "keywords": [
     "cli",
     "symlink",
@@ -32,5 +39,12 @@
   "license": "MIT",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "commander": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.9.3"
   }
 }

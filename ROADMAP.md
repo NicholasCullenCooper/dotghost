@@ -23,11 +23,21 @@ The core mount/unmount/sync cycle with stash-based conflict resolution.
 
 Mount subsets of the registry instead of everything.
 
+Implemented:
+
+- `dotghost mount <glob ...>`
+- `dotghost mount --exclude <glob>`
+- `.dotghostignore` in registry
+
+Still open:
+
+- named profiles on top of the filter system
+
 | Feature | Description |
 | --- | --- |
-| `dotghost mount <glob>` | Mount only matching files: `dotghost mount "AGENTS.md"` or `dotghost mount "skills/*"` |
+| `dotghost mount <glob>` | Mount only matching files: `dotghost mount "AGENTS.md"` or `dotghost mount "skills/**"` |
 | `dotghost mount --exclude <glob>` | Mount everything except matches |
-| `.dotghostignore` in registry | Permanent exclusion list (like `.gitignore` for the registry) |
+| `.dotghostignore` in registry | Permanent default exclusion list with `--include-ignored` as an explicit escape hatch |
 
 **Why:** As the registry grows, not every file belongs in every project. A Go project doesn't need `.cursorrules` with React conventions, and a compact core registry may still want candidate or experimental workflow files nearby. This is the lightest way to solve that without profiles.
 
@@ -36,6 +46,17 @@ Mount subsets of the registry instead of everything.
 ## v1.2 — Profiles
 
 Named subsets of the registry for different project types.
+
+Implemented:
+
+- `dotghost.profiles.json` in registry
+- `dotghost mount --profile <name>`
+- `dotghost profiles`
+
+Still open:
+
+- profile inheritance or composition
+- profile-aware default suggestions
 
 | Feature | Description |
 | --- | --- |

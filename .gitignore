@@ -1,1 +1,3 @@
 .factory/
+dist/
+*.tsbuildinfo

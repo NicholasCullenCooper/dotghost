@@ -18,6 +18,14 @@ Use it for the workflow layer that tends to drift when copied by hand: `AGENTS.m
 npm install -g dotghost
 ```
 
+## Development
+
+```bash
+npm install
+npm run build
+node dist/index.js --help
+```
+
 ## Quick start
 
 ```bash
@@ -30,6 +38,10 @@ dotghost init https://github.com/NicholasCullenCooper/dotagent.git
 # in any Git repo
 cd my-project
 dotghost mount
+dotghost mount --profile core
+dotghost mount "AGENTS.md" "workflows/**"
+dotghost mount --exclude "skills/**"
+dotghost mount --include-ignored "candidate/**"
 dotghost status
 dotghost unmount
 ```
@@ -90,6 +102,8 @@ As registries grow, keeping the default surface compact matters. dotghost alread
 whole registry cleanly; selective mounting and profiles become more valuable once a registry starts
 carrying candidate or experimental material.
 
+The registry can also define named mount surfaces in `dotghost.profiles.json`.
+
 ## Conflict handling
 
 If a file already exists in the project, dotghost prompts you:
@@ -106,7 +120,96 @@ For automation:
 ```bash
 dotghost mount --force
 dotghost mount --skip-conflicts
+dotghost mount --profile core
+dotghost mount "commands/**" --exclude "commands/release.md"
+dotghost mount --include-ignored "candidate/**"
 ```
+
+## Profiles
+
+If your registry contains a `dotghost.profiles.json` file, you can mount named selections instead
+of spelling out globs every time.
+
+Example:
+
+```json
+{
+   "core": {
+      "description": "Default shared workflow layer",
+      "include": ["AGENTS.md", "CLAUDE.md", "agents/**", "commands/**", "workflows/**", "skills/**"]
+   },
+   "release-manager": {
+      "description": "Release-oriented workflows and skills",
+      "include": ["AGENTS.md", "commands/release.md", "workflows/**", "skills/release-management/**"],
+      "exclude": ["skills/performance-investigation/**"]
+   }
+}
+```
+
+Commands:
+
+```bash
+dotghost profiles
+dotghost mount --profile core
+dotghost mount --profile release-manager --exclude "workflows/**"
+```
+
+If profiles are available in the active registry, `dotghost mount --help` will list them directly.
+
+Rules:
+
+- `--profile <name>` seeds the mount selection with the profile's include globs
+- profile excludes are applied before CLI excludes are added
+- CLI include patterns are added on top of the selected profile
+- `--include-ignored` overrides `.dotghostignore`, and a profile can also opt into hidden content with `includeIgnored: true`
+- `dotghost.profiles.json` itself is never mounted into target repositories
+
+## Selective mounting
+
+You can mount only part of the registry by passing one or more registry-relative globs to
+`dotghost mount`.
+
+Examples:
+
+```bash
+dotghost mount "AGENTS.md"
+dotghost mount "workflows/**" "skills/testing/**"
+dotghost mount "skills/debugging"
+dotghost mount --exclude "skills/**"
+dotghost mount "**" --exclude "workflows/**"
+dotghost mount --include-ignored "candidate/**"
+```
+
+Rules:
+
+- patterns are matched against registry-relative paths
+- plain file paths match that file
+- plain directory paths match everything under that directory
+- `*` matches within one path segment
+- `**` matches across path segments
+- quote globs so your shell does not expand them before dotghost sees them
+
+## Registry defaults with .dotghostignore
+
+If your registry contains a `.dotghostignore` file, dotghost treats it as the default hidden surface.
+
+Example:
+
+```text
+# keep non-default material out of normal mounts
+candidate/**
+experimental/**
+```
+
+Rules:
+
+- patterns use the same registry-relative matching rules as `dotghost mount`
+- blank lines and lines starting with `#` are ignored
+- `.dotghostignore` itself is never mounted into target repositories
+- `dotghost.profiles.json` is also never mounted into target repositories
+- use `--include-ignored` when you intentionally want to mount hidden material
+
+This keeps the default mounted surface compact without forcing a separate registry for early-stage content.
 
 ## Registry sync
 
