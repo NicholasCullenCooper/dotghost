@@ -1,7 +1,7 @@
 {
   "name": "dotghost",
   "version": "1.0.1",
-  "description": "Ghost your AI agent config into any repo. Symlinks, invisible to Git, reversible.",
+  "description": "Keep AGENTS.md, agents, commands, workflows, and skills in sync across repos.",
   "type": "module",
   "bin": {
     "dotghost": "index.js"
@@ -12,14 +12,15 @@
   "keywords": [
     "cli",
     "symlink",
-    "dotfiles",
-    "ai",
     "agents",
-    "cursor",
-    "copilot",
-    "codex",
-    "claude",
-    "agentic",
+    "agent-workflow",
+    "workflow",
+    "workflows",
+    "commands",
+    "skills",
+    "agents-md",
+    "git",
+    "developer-tools",
     "dotghost"
   ],
   "repository": {

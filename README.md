@@ -1,16 +1,16 @@
 # dotghost
 
-**Ghost your AI agent config into any repo. Leave no trace.**
+**Keep your agent workflow files in sync across repos.**
 
-AI coding agents (Cursor, Claude Code, Copilot, Codex) need context files -- `AGENTS.md`, `.cursorrules`, `.github/copilot-instructions.md`. But copy-pasting these across repos means fragmented context, and committing them pollutes shared codebases.
+dotghost mounts files from a global registry into the current Git repo as symlinks, hides them with local-only Git exclusions, and restores originals on unmount.
 
-dotghost fixes both. It symlinks your global agent config into any project root, hides everything from Git using local-only exclusion, and restores originals when you unmount.
+Use it for the workflow layer that tends to drift when copied by hand: `AGENTS.md`, agents, commands, workflows, and skills.
 
-## How it works
+## Why
 
-1. **Symlinks, not copies.** Edits flow back to your global registry instantly.
-2. **Invisible to Git.** Uses `.git/info/exclude` -- never touches `.gitignore`, never commits anything.
-3. **Stash/restore.** If a file already exists, dotghost backs it up and restores it on unmount.
+- avoid copy-paste drift across repos
+- keep local workflow files out of shared repo clutter
+- keep one canonical version in one place
 
 ## Install
 
@@ -18,112 +18,119 @@ dotghost fixes both. It symlinks your global agent config into any project root,
 npm install -g dotghost
 ```
 
-## Usage
+## Quick start
 
 ```bash
-# Set up your global registry (or clone an existing one)
+# create a local registry
 dotghost init
-dotghost init https://github.com/yourname/dotagent.git
 
-# Mount into any git repo
+# or clone a registry you already keep in git
+dotghost init https://github.com/NicholasCullenCooper/dotagent.git
+
+# in any Git repo
 cd my-project
 dotghost mount
-
-# Check what's mounted
 dotghost status
-
-# Unmount and restore originals
 dotghost unmount
-
-# Sync registry with git
-dotghost pull
-dotghost push
-dotghost diff
 ```
 
-## Release
-
-This repo publishes to npm when a GitHub Release is published. The workflow is defined in [.github/workflows/publish.yml](.github/workflows/publish.yml).
-
-If you use [just](https://github.com/casey/just), you can automate the local release steps with:
+## Demo
 
 ```bash
-just release
+$ dotghost mount
+✔ Linked AGENTS.md
+✔ Linked commands/review.md
+✔ Linked workflows/ship-a-bug-fix.md
+✔ Mounted 3 files from registry.
+
+$ dotghost status
+🟢 3 files mounted:
+   AGENTS.md -> ~/.dotghost/AGENTS.md
+   commands/review.md -> ~/.dotghost/commands/review.md
+   workflows/ship-a-bug-fix.md -> ~/.dotghost/workflows/ship-a-bug-fix.md
+ℹ Registry git: main (clean)
+
+$ dotghost unmount
+✔ Unlinked AGENTS.md
+✔ Unlinked commands/review.md
+✔ Unlinked workflows/ship-a-bug-fix.md
+✔ Unmounted: 3 symlinks removed.
 ```
 
-What it does:
+## How it works
 
-1. Checks that `git`, `npm`, `node`, and `gh` are installed.
-2. Refuses to run unless you are on `main`.
-3. Refuses to run if your working tree is dirty.
-4. Runs `npm version patch` by default, which creates the version commit and tag.
-5. Pushes `main` and tags.
-6. Creates a published GitHub Release with generated notes, which triggers npm publishing.
+1. dotghost stores your canonical files in `~/.dotghost`.
+2. `dotghost mount` symlinks them into the current Git repo.
+3. dotghost adds entries to `.git/info/exclude` so the files stay local.
+4. If a target already exists, dotghost can stash it and restore it on `dotghost unmount`.
 
-Before releasing, commit your changes normally:
+## Registry layout
 
-```bash
-git add -A
-git commit -m "your change"
-just release
-```
+The current center of gravity is `AGENTS.md` plus structured workflow files such as agents, commands, workflows, and skills.
 
-You can choose a different semver bump:
-
-```bash
-just release minor
-just release major
-```
-
-## Your registry
-
-Populate `~/.dotghost` with the files you want available everywhere:
-
-```
+```text
 ~/.dotghost/
 ├── AGENTS.md
-├── CLAUDE.md
-├── .cursorrules
-├── .github/
-│   └── copilot-instructions.md
+├── agents/
+│   └── reviewer.md
+├── commands/
+│   └── release.md
+├── workflows/
+│   └── ship-a-feature.md
 └── skills/
-    ├── debugging.md
-    └── code-review.md
+   ├── debugging/
+   │   └── SKILL.md
+   └── code-review/
+      └── SKILL.md
 ```
 
-## Collision handling
+Anything in the registry can be mounted into a repo, including directory-based skills with support files.
 
-When a file already exists in the project, dotghost prompts you:
+As registries grow, keeping the default surface compact matters. dotghost already supports mounting the
+whole registry cleanly; selective mounting and profiles become more valuable once a registry starts
+carrying candidate or experimental material.
 
-```
+## Conflict handling
+
+If a file already exists in the project, dotghost prompts you:
+
+```text
 ⚠ AGENTS.md already exists in this project.
    Local:    1284 bytes
    Registry: 3502 bytes
    [o]verwrite (stash original)  [s]kip  [d]iff  >
 ```
 
-Or use flags for CI/automation:
+For automation:
 
 ```bash
-dotghost mount --force           # Overwrite all, stash originals
-dotghost mount --skip-conflicts  # Skip all conflicts
+dotghost mount --force
+dotghost mount --skip-conflicts
 ```
 
-## Status
+## Registry sync
 
+If your registry is a Git repo:
+
+```bash
+dotghost pull
+dotghost diff
+dotghost push
 ```
-🟢 3 files mounted:
-   AGENTS.md -> ~/.dotghost/AGENTS.md
-   CLAUDE.md -> ~/.dotghost/CLAUDE.md
-   .cursorrules -> ~/.dotghost/.cursorrules
-📦 1 original stashed:
-   AGENTS.md (2026-03-17)
-ℹ Registry git: main (clean)
+
+## Release
+
+This package publishes to npm from a GitHub Release. If you use `just`, run:
+
+```bash
+just release
 ```
+
+That script checks prerequisites, bumps the version, pushes `main` and tags, and creates the GitHub Release.
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for planned features: selective mounting, profiles, project context generation, drift detection, multi-source registries.
+Planned features are in [ROADMAP.md](ROADMAP.md).
 
 ## License
 

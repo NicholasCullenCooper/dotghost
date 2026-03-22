@@ -563,7 +563,7 @@ function diff() {
 
 function usage() {
   console.log(`
-${color.bold("dotghost")} — Ghost your agent config into any repo.
+${color.bold("dotghost")} — Ghost your agent workflow registry into any repo.
 
 ${color.cyan("Usage:")}
   dotghost init [url]   Initialise registry, or clone from a git repo

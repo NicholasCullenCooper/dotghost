@@ -29,7 +29,7 @@ Mount subsets of the registry instead of everything.
 | `dotghost mount --exclude <glob>` | Mount everything except matches |
 | `.dotghostignore` in registry | Permanent exclusion list (like `.gitignore` for the registry) |
 
-**Why:** As the registry grows, not every file belongs in every project. A Go project doesn't need `.cursorrules` with React conventions. This is the lightest way to solve that without profiles.
+**Why:** As the registry grows, not every file belongs in every project. A Go project doesn't need `.cursorrules` with React conventions, and a compact core registry may still want candidate or experimental workflow files nearby. This is the lightest way to solve that without profiles.
 
 ---
 
@@ -46,13 +46,13 @@ Named subsets of the registry for different project types.
 Example `dotghost.profiles.json`:
 ```json
 {
-  "go": ["AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md"],
-  "react": ["AGENTS.md", ".cursorrules", "skills/react-*"],
+  "go": ["AGENTS.md", "CLAUDE.md", "commands/**", "skills/testing/**"],
+  "react": ["AGENTS.md", "workflows/**", "skills/frontend-*/**"],
   "full": ["**/*"]
 }
 ```
 
-**Why:** Profiles emerge naturally once you have 10+ files in the registry and 5+ project types. The selective mounting in v1.1 proves the need; profiles codify common selections.
+**Why:** Profiles emerge naturally once you have 10+ files in the registry and 5+ project types. The selective mounting in v1.1 proves the need; profiles codify common selections such as `core`, `frontend`, or `release-manager`.
 
 ---
 
