@@ -49,9 +49,6 @@ Implemented:
 - `dotghost mount --profile <name>`
 - `dotghost profiles`
 - profile-aware default suggestions
-
-Still open:
-
 - profile inheritance or composition
 
 | Feature | Description |
@@ -59,6 +56,7 @@ Still open:
 | `dotghost.profiles.json` in registry | Declare named profiles mapping to file lists/globs |
 | `dotghost mount --profile <name>` | Mount only files in that profile |
 | `dotghost profiles` | List available profiles |
+| `extends` in profile objects | Compose profiles from one or more parent profiles |
 
 Example `dotghost.profiles.json`:
 ```json

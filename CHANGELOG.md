@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- added profile composition through `extends` in `dotghost.profiles.json`
+- profile resolution now detects cycles and unknown parent profile names early
+
 ## v1.2.0
 
 Released: 2026-03-23

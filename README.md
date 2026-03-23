@@ -134,14 +134,14 @@ Example:
 
 ```json
 {
-   "core": {
-      "description": "Default shared workflow layer",
-      "include": ["AGENTS.md", "CLAUDE.md", "agents/**", "commands/**", "workflows/**", "skills/**"]
+   "base": {
+      "include": ["AGENTS.md", "CLAUDE.md", "commands/**"]
    },
    "release-manager": {
+      "extends": "base",
       "description": "Release-oriented workflows and skills",
-      "include": ["AGENTS.md", "commands/release.md", "workflows/**", "skills/release-management/**"],
-      "exclude": ["skills/performance-investigation/**"]
+      "include": ["workflows/**", "skills/release-management/**"],
+      "exclude": ["commands/debug.md"]
    }
 }
 ```
@@ -160,6 +160,9 @@ If you run plain `dotghost mount` with no profile or glob selection, dotghost st
 
 Rules:
 
+- `extends` can be a profile name or an array of profile names
+- parent profiles are resolved before child profile includes and excludes are applied
+- cycles and unknown parent profile names are treated as configuration errors
 - `--profile <name>` seeds the mount selection with the profile's include globs
 - profile excludes are applied before CLI excludes are added
 - CLI include patterns are added on top of the selected profile

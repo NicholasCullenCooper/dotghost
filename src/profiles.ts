@@ -10,7 +10,21 @@ export interface RegistryProfile {
     includeIgnored?: boolean;
 }
 
-type ProfileFileValue = string[] | RegistryProfile;
+interface RegistryProfileDefinition {
+    description?: string;
+    extends: string[];
+    include: string[];
+    exclude?: string[];
+    includeIgnored?: boolean;
+}
+
+type ProfileFileValue = string[] | {
+    description?: unknown;
+    extends?: unknown;
+    include?: unknown;
+    exclude?: unknown;
+    includeIgnored?: unknown;
+};
 
 function profilesPath(): string {
     return path.join(REGISTRY_DIR, REGISTRY_PROFILES_FILE);
@@ -46,22 +60,57 @@ function isStringArray(value: unknown): value is string[] {
     return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
-function normalizeProfile(name: string, value: ProfileFileValue): RegistryProfile {
+function mergeUnique(values: string[], additions: string[]): string[] {
+    const merged = [...values];
+    const seen = new Set(values);
+
+    for (const addition of additions) {
+        if (!seen.has(addition)) {
+            merged.push(addition);
+            seen.add(addition);
+        }
+    }
+
+    return merged;
+}
+
+function normalizeExtends(name: string, value: unknown): string[] {
+    if (value === undefined) {
+        return [];
+    }
+
+    if (typeof value === "string") {
+        return [value];
+    }
+
     if (isStringArray(value)) {
-        return { include: value };
+        return value;
+    }
+
+    throw new Error(`Profile \"${name}\" has an invalid \"extends\" field. Expected a profile name or an array of profile names.`);
+}
+
+function normalizeProfile(name: string, value: ProfileFileValue): RegistryProfileDefinition {
+    if (isStringArray(value)) {
+        return { extends: [], include: value };
     }
 
     if (typeof value !== "object" || value === null) {
         throw new Error(`Profile \"${name}\" must be an array of include globs or an object.`);
     }
 
+    const extendsProfiles = "extends" in value ? normalizeExtends(name, value.extends) : [];
     const include = "include" in value ? value.include : undefined;
     const exclude = "exclude" in value ? value.exclude : undefined;
     const description = "description" in value ? value.description : undefined;
     const includeIgnored = "includeIgnored" in value ? value.includeIgnored : undefined;
 
-    if (!isStringArray(include)) {
-        throw new Error(`Profile \"${name}\" must define an \"include\" array of globs.`);
+    if (include !== undefined && !isStringArray(include)) {
+        throw new Error(`Profile \"${name}\" has an invalid \"include\" field. Expected an array of globs.`);
+    }
+
+    if (include === undefined && extendsProfiles.length === 0) {
+        throw new Error(`Profile \"${name}\" must define an \"include\" array or extend another profile.`);
     }
 
     if (exclude !== undefined && !isStringArray(exclude)) {
@@ -77,11 +126,75 @@ function normalizeProfile(name: string, value: ProfileFileValue): RegistryProfil
     }
 
     return {
-        include,
+        extends: extendsProfiles,
+        include: include ?? [],
         exclude,
         description,
         includeIgnored,
     };
+}
+
+function resolveProfile(
+    name: string,
+    definitions: Record<string, RegistryProfileDefinition>,
+    resolvedProfiles: Record<string, RegistryProfile>,
+    stack: string[],
+): RegistryProfile {
+    const resolved = resolvedProfiles[name];
+    if (resolved) {
+        return resolved;
+    }
+
+    const cycleStart = stack.indexOf(name);
+    if (cycleStart !== -1) {
+        const cycle = [...stack.slice(cycleStart), name].join(" -> ");
+        throw new Error(`Profile cycle detected in ${REGISTRY_PROFILES_FILE}: ${cycle}.`);
+    }
+
+    const definition = definitions[name];
+    if (!definition) {
+        throw new Error(`Unknown profile \"${name}\" referenced while resolving ${REGISTRY_PROFILES_FILE}.`);
+    }
+
+    stack.push(name);
+
+    let include: string[] = [];
+    let exclude: string[] = [];
+    let includeIgnored = false;
+
+    for (const parentName of definition.extends) {
+        const parentDefinition = definitions[parentName];
+        if (!parentDefinition) {
+            throw new Error(`Profile \"${name}\" extends unknown profile \"${parentName}\".`);
+        }
+
+        const parentProfile = resolveProfile(parentName, definitions, resolvedProfiles, stack);
+        include = mergeUnique(include, parentProfile.include);
+        exclude = mergeUnique(exclude, parentProfile.exclude ?? []);
+        includeIgnored = includeIgnored || Boolean(parentProfile.includeIgnored);
+    }
+
+    stack.pop();
+
+    include = mergeUnique(include, definition.include);
+    exclude = mergeUnique(exclude, definition.exclude ?? []);
+    includeIgnored = includeIgnored || Boolean(definition.includeIgnored);
+
+    const profile: RegistryProfile = {
+        include,
+        description: definition.description,
+    };
+
+    if (exclude.length > 0) {
+        profile.exclude = exclude;
+    }
+
+    if (includeIgnored) {
+        profile.includeIgnored = true;
+    }
+
+    resolvedProfiles[name] = profile;
+    return profile;
 }
 
 export function readRegistryProfiles(): Record<string, RegistryProfile> {
@@ -97,12 +210,17 @@ export function readRegistryProfiles(): Record<string, RegistryProfile> {
         throw new Error(`${REGISTRY_PROFILES_FILE} must contain a top-level object of named profiles.`);
     }
 
-    const normalizedProfiles: Record<string, RegistryProfile> = {};
+    const normalizedProfiles: Record<string, RegistryProfileDefinition> = {};
     for (const [name, value] of Object.entries(parsed)) {
         normalizedProfiles[name] = normalizeProfile(name, value as ProfileFileValue);
     }
 
-    return normalizedProfiles;
+    const resolvedProfiles: Record<string, RegistryProfile> = {};
+    for (const name of Object.keys(normalizedProfiles)) {
+        resolveProfile(name, normalizedProfiles, resolvedProfiles, []);
+    }
+
+    return resolvedProfiles;
 }
 
 export function getRegistryProfile(name: string): RegistryProfile {
