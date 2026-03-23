@@ -1,9 +1,19 @@
 # Changelog
 
-## Unreleased
+## v1.3.0
+
+Released: 2026-03-23
+
+Highlights:
 
 - added profile composition through `extends` in `dotghost.profiles.json`
 - profile resolution now detects cycles and unknown parent profile names early
+
+Behavior changes:
+
+- profiles can now inherit from one or more parent profiles
+- composed includes and excludes are deduplicated while preserving parent-first order
+- invalid profile graphs fail fast with clear configuration errors
 
 ## v1.2.0
 

@@ -236,7 +236,7 @@ just release
 
 That script checks prerequisites, bumps the version, pushes `main` and tags, and creates the GitHub Release.
 
-Release notes live in [docs/releases/v1.2.0.md](docs/releases/v1.2.0.md), and the rolling summary lives in [CHANGELOG.md](CHANGELOG.md).
+Release notes live in [docs/releases/v1.3.0.md](docs/releases/v1.3.0.md), and the rolling summary lives in [CHANGELOG.md](CHANGELOG.md).
 
 ## Roadmap
 
