@@ -156,6 +156,8 @@ dotghost mount --profile release-manager --exclude "workflows/**"
 
 If profiles are available in the active registry, `dotghost mount --help` will list them directly.
 
+If you run plain `dotghost mount` with no profile or glob selection, dotghost still mounts the full visible registry surface, but it now suggests a narrower profile when one is available.
+
 Rules:
 
 - `--profile <name>` seeds the mount selection with the profile's include globs
@@ -230,6 +232,8 @@ just release
 ```
 
 That script checks prerequisites, bumps the version, pushes `main` and tags, and creates the GitHub Release.
+
+Release notes live in [docs/releases/v1.2.0.md](docs/releases/v1.2.0.md), and the rolling summary lives in [CHANGELOG.md](CHANGELOG.md).
 
 ## Roadmap
 

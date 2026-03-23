@@ -1,6 +1,6 @@
 # dotghost Roadmap
 
-## v1.0 — Foundation (current)
+## v1.0 — Foundation
 
 The core mount/unmount/sync cycle with stash-based conflict resolution.
 
@@ -29,10 +29,6 @@ Implemented:
 - `dotghost mount --exclude <glob>`
 - `.dotghostignore` in registry
 
-Still open:
-
-- named profiles on top of the filter system
-
 | Feature | Description |
 | --- | --- |
 | `dotghost mount <glob>` | Mount only matching files: `dotghost mount "AGENTS.md"` or `dotghost mount "skills/**"` |
@@ -52,11 +48,11 @@ Implemented:
 - `dotghost.profiles.json` in registry
 - `dotghost mount --profile <name>`
 - `dotghost profiles`
+- profile-aware default suggestions
 
 Still open:
 
 - profile inheritance or composition
-- profile-aware default suggestions
 
 | Feature | Description |
 | --- | --- |
@@ -77,7 +73,7 @@ Example `dotghost.profiles.json`:
 
 ---
 
-## v1.3 — Project-specific context generation
+## v1.3 — Project-specific context generation (current)
 
 Auto-generate project-specific agent instructions by scanning the codebase.
 

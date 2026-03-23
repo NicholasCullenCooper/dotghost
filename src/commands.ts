@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { applyRegistryIgnore, filterRegistryEntries, MountSelection, readRegistryIgnorePatterns } from "./matching.js";
 import { color, error, info, success, warn } from "./output.js";
-import { getProfilesFileName, readRegistryProfiles } from "./profiles.js";
+import { getProfilesFileName, getSuggestedProfileName, readRegistryProfiles } from "./profiles.js";
 import {
   cloneRegistry,
   ensureDir,
@@ -95,6 +95,21 @@ export async function mountRegistry(selection: MountSelection): Promise<void> {
   const allEntries = registryEntries();
   const ignorePatterns = selection.includeIgnored ? [] : readRegistryIgnorePatterns();
   const visibleEntries = applyRegistryIgnore(allEntries, ignorePatterns);
+  const mountedWholeVisibleSurface = selection.includePatterns.length === 0
+    && selection.excludePatterns.length === 0
+    && !selection.includeIgnored;
+
+  if (mountedWholeVisibleSurface) {
+    try {
+      const suggestedProfile = getSuggestedProfileName();
+      if (suggestedProfile) {
+        info(`No profile or glob selection provided. Mounting the full visible registry surface. Try \`dotghost mount --profile ${suggestedProfile}\` for a narrower default.`);
+      }
+    } catch {
+      // Skip suggestion output if profile discovery fails; plain mounts should still work.
+    }
+  }
+
   const entries = filterRegistryEntries(visibleEntries, selection.includePatterns, selection.excludePatterns);
 
   if (entries.length === 0) {

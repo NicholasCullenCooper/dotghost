@@ -130,6 +130,15 @@ export function getProfileNames(): string[] {
     return Object.keys(readRegistryProfiles());
 }
 
+export function getSuggestedProfileName(): string | undefined {
+    const profileNames = getProfileNames();
+    if (profileNames.length === 0) {
+        return undefined;
+    }
+
+    return profileNames.includes("core") ? "core" : profileNames[0];
+}
+
 export function getProfilesFileName(): string {
     return REGISTRY_PROFILES_FILE;
 }
