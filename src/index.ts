@@ -3,6 +3,7 @@
 import { Command } from "commander";
 
 import {
+  checkRegistry,
   diffRegistry,
   initRegistry,
   listProfiles,
@@ -12,6 +13,7 @@ import {
   showVersion,
   statusRegistry,
   unmountRegistry,
+  updateRegistry,
 } from "./commands.js";
 import { MountSelection } from "./matching.js";
 import { error } from "./output.js";
@@ -101,8 +103,10 @@ function createProgram(): Command {
     });
 
   program.command("unmount").description("Remove symlinks, restore stashed originals").action(unmountRegistry);
+  program.command("check").description("Check mounted dotghost links for drift or missing registry sources").action(checkRegistry);
   program.command("profiles").description("List named registry profiles").action(listProfiles);
   program.command("status").description("Show mounted files, stashed originals, and registry git state").action(statusRegistry);
+  program.command("update").description("Repair drifted mounted dotghost links where the registry source still exists").action(updateRegistry);
   program.command("pull").description("Pull latest changes into the registry").action(pullRegistry);
   program.command("push").description("Commit and push local registry changes").action(pushRegistry);
   program.command("diff").description("Show uncommitted changes in the registry").action(diffRegistry);

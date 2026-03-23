@@ -7,6 +7,8 @@ import {
   GIT_DIR,
   GIT_EXCLUDE_FILE,
   MANAGED_COMMENT,
+  normalizeRegistryPath,
+  REGISTRY_DIR,
   STASH_DIR_NAME,
   STASH_MANIFEST,
 } from "./runtime.js";
@@ -17,6 +19,14 @@ interface ManifestEntry {
 }
 
 type StashManifest = Record<string, ManifestEntry>;
+
+export interface MountedRegistryLink {
+  relativePath: string;
+  fullPath: string;
+  expectedSource: string;
+  actualTarget: string;
+  resolvedTarget: string;
+}
 
 export function readExclude(): string[] {
   ensureDir(path.join(GIT_DIR, "info"));
@@ -109,6 +119,44 @@ export function cleanupStash(): void {
   if (Object.keys(readManifest()).length === 0) {
     fs.rmSync(target, { recursive: true, force: true });
   }
+}
+
+export function findMountedRegistryLinks(root = process.cwd()): MountedRegistryLink[] {
+  const mountedLinks: MountedRegistryLink[] = [];
+
+  function walk(dir: string): void {
+    if (!fs.existsSync(dir)) {
+      return;
+    }
+
+    for (const entry of fs.readdirSync(dir)) {
+      const fullPath = path.join(dir, entry);
+      const stat = fs.lstatSync(fullPath);
+
+      if (stat.isSymbolicLink()) {
+        const actualTarget = fs.readlinkSync(fullPath);
+        const resolvedTarget = path.isAbsolute(actualTarget)
+          ? actualTarget
+          : path.resolve(path.dirname(fullPath), actualTarget);
+
+        if (resolvedTarget.startsWith(REGISTRY_DIR)) {
+          const relativePath = normalizeRegistryPath(path.relative(root, fullPath));
+          mountedLinks.push({
+            relativePath,
+            fullPath,
+            expectedSource: path.join(REGISTRY_DIR, relativePath),
+            actualTarget,
+            resolvedTarget,
+          });
+        }
+      } else if (stat.isDirectory() && entry !== ".git" && entry !== STASH_DIR_NAME && entry !== "node_modules") {
+        walk(fullPath);
+      }
+    }
+  }
+
+  walk(root);
+  return mountedLinks;
 }
 
 export async function ask(question: string): Promise<string> {

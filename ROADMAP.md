@@ -95,17 +95,26 @@ Auto-generate project-specific agent instructions by scanning the codebase.
 
 Detect when local project instructions have drifted from global standards.
 
+Implemented:
+
+- `dotghost check`
+- `dotghost update`
+
+Still open:
+
+- post-pull hooks or workspace tracking
+
 | Feature | Description |
 | --- | --- |
-| `dotghost check` | Compare mounted files against registry, report any local modifications |
-| `dotghost update` | Show recommended changes to project-specific files based on registry changes |
+| `dotghost check` | Inspect mounted dotghost links for drift or missing registry sources |
+| `dotghost update` | Repair drifted links when the canonical registry source still exists |
 | Post-pull hooks | After `dotghost pull`, flag any mounted workspaces that need re-mounting |
 
 **Why:** The registry evolves. After a `dotghost pull` brings new universal rules, you want to know which projects are running stale instructions. This is the "did I forget to re-mount?" safety net.
 
 ---
 
-## v1.5 — Multi-source registry
+## v1.5 — Multi-source registry (current)
 
 Support multiple git repos feeding into one registry.
 

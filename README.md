@@ -42,6 +42,8 @@ dotghost mount --profile core
 dotghost mount "AGENTS.md" "workflows/**"
 dotghost mount --exclude "skills/**"
 dotghost mount --include-ignored "candidate/**"
+dotghost check
+dotghost update
 dotghost status
 dotghost unmount
 ```
@@ -225,6 +227,27 @@ dotghost pull
 dotghost diff
 dotghost push
 ```
+
+## Drift detection
+
+Use `dotghost check` to inspect mounted dotghost links in the current repository.
+
+It currently detects:
+
+- healthy mounted links
+- drifted links that still point inside the registry, but not to the canonical path for that file
+- stale links whose expected registry source no longer exists
+
+Use `dotghost update` to repair drifted links when the expected registry source still exists.
+
+Example:
+
+```bash
+dotghost check
+dotghost update
+```
+
+This does not yet track every workspace globally or run post-pull hooks. It is a local repository repair pass.
 
 ## Release
 

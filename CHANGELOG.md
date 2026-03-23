@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- added `dotghost check` to inspect mounted links for drift and missing registry sources
+- added `dotghost update` to repair relinkable mounted files locally
+
 ## v1.3.0
 
 Released: 2026-03-23

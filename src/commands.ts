@@ -25,12 +25,49 @@ import {
   addExclusion,
   ask,
   cleanupStash,
+  findMountedRegistryLinks,
   readExclude,
   readManifest,
   restoreFile,
   stashDir,
   stashFile,
 } from "./workspace.js";
+
+interface DriftStatus {
+  healthy: boolean;
+  relativePath: string;
+  fullPath: string;
+  expectedSource: string;
+  resolvedTarget: string;
+  issue?: "drifted-link" | "missing-source";
+}
+
+function topLevelRegistryPath(relativePath: string): string {
+  return relativePath.includes("/") ? relativePath.split("/")[0]! : relativePath;
+}
+
+function inspectMountedLinks(): DriftStatus[] {
+  return findMountedRegistryLinks().map((link) => {
+    if (link.resolvedTarget === link.expectedSource && fs.existsSync(link.expectedSource)) {
+      return {
+        healthy: true,
+        relativePath: link.relativePath,
+        fullPath: link.fullPath,
+        expectedSource: link.expectedSource,
+        resolvedTarget: link.resolvedTarget,
+      };
+    }
+
+    return {
+      healthy: false,
+      relativePath: link.relativePath,
+      fullPath: link.fullPath,
+      expectedSource: link.expectedSource,
+      resolvedTarget: link.resolvedTarget,
+      issue: fs.existsSync(link.expectedSource) ? "drifted-link" : "missing-source",
+    };
+  });
+}
 
 export function showVersion(): void {
   console.log(PKG.version);
@@ -213,7 +250,7 @@ export async function mountRegistry(selection: MountSelection): Promise<void> {
     const symlinkType: fs.symlink.Type = stat.isDirectory() ? (isWin ? "junction" : "dir") : "file";
     fs.symlinkSync(source, target, symlinkType);
 
-    const topLevel = entry.includes(path.sep) ? entry.split(path.sep)[0] : entry;
+    const topLevel = topLevelRegistryPath(entry);
     addExclusion(topLevel);
 
     success(`Linked ${entry}`);
@@ -254,6 +291,84 @@ export function listProfiles(): void {
     if (profile.includeIgnored) {
       console.log("    includeIgnored: true");
     }
+  }
+}
+
+export function checkRegistry(): void {
+  requireGitRepo();
+  requireRegistry();
+
+  const links = inspectMountedLinks();
+  if (links.length === 0) {
+    info("No dotghost-managed links found in this repository.");
+    return;
+  }
+
+  const unhealthyLinks = links.filter((link) => !link.healthy);
+  if (unhealthyLinks.length === 0) {
+    success(`All ${links.length} mounted dotghost link${links.length === 1 ? " is" : "s are"} healthy.`);
+    return;
+  }
+
+  for (const link of unhealthyLinks) {
+    if (link.issue === "drifted-link") {
+      warn(`${link.relativePath} points to ${link.resolvedTarget} but should point to ${link.expectedSource}.`);
+    } else if (link.issue === "missing-source") {
+      warn(`${link.relativePath} points to a registry file that no longer exists: ${link.expectedSource}.`);
+    }
+  }
+
+  error(`Found ${unhealthyLinks.length} drifted dotghost link${unhealthyLinks.length === 1 ? "" : "s"}. Run \`dotghost update\` to repair what can be repaired.`);
+  process.exit(1);
+}
+
+export function updateRegistry(): void {
+  requireGitRepo();
+  requireRegistry();
+
+  const links = inspectMountedLinks();
+  if (links.length === 0) {
+    info("No dotghost-managed links found in this repository.");
+    return;
+  }
+
+  let repaired = 0;
+  let unresolved = 0;
+
+  for (const link of links) {
+    if (link.healthy) {
+      continue;
+    }
+
+    if (link.issue === "missing-source") {
+      warn(`Cannot update ${link.relativePath}; registry source is missing: ${link.expectedSource}.`);
+      unresolved++;
+      continue;
+    }
+
+    fs.unlinkSync(link.fullPath);
+
+    const sourceStat = fs.statSync(link.expectedSource);
+    const symlinkType: fs.symlink.Type = sourceStat.isDirectory() ? (os.platform() === "win32" ? "junction" : "dir") : "file";
+    fs.symlinkSync(link.expectedSource, link.fullPath, symlinkType);
+
+    const topLevel = topLevelRegistryPath(link.relativePath);
+    addExclusion(topLevel);
+    success(`Updated ${link.relativePath}`);
+    repaired++;
+  }
+
+  if (repaired === 0 && unresolved === 0) {
+    info("All mounted dotghost links are already up to date.");
+    return;
+  }
+
+  if (repaired > 0) {
+    success(`Repaired ${repaired} drifted dotghost link${repaired === 1 ? "" : "s"}.`);
+  }
+
+  if (unresolved > 0) {
+    warn(`${unresolved} link${unresolved === 1 ? " remains" : "s remain"} unresolved because the registry source no longer exists.`);
   }
 }
 
@@ -343,29 +458,7 @@ export function unmountRegistry(): void {
 
 export function statusRegistry(): void {
   const cwd = process.cwd();
-  const mounted: string[] = [];
-
-  function findMounted(dir: string): void {
-    if (!fs.existsSync(dir)) {
-      return;
-    }
-
-    for (const entry of fs.readdirSync(dir)) {
-      const fullPath = path.join(dir, entry);
-      const stat = fs.lstatSync(fullPath);
-
-      if (stat.isSymbolicLink()) {
-        const linkTarget = fs.readlinkSync(fullPath);
-        if (linkTarget.startsWith(REGISTRY_DIR)) {
-          mounted.push(path.relative(cwd, fullPath));
-        }
-      } else if (stat.isDirectory() && entry !== ".git" && entry !== STASH_DIR_NAME && entry !== "node_modules") {
-        findMounted(fullPath);
-      }
-    }
-  }
-
-  findMounted(cwd);
+  const mounted = findMountedRegistryLinks(cwd).map((link) => link.relativePath);
 
   if (mounted.length > 0) {
     console.log(color.green(`🟢 ${mounted.length} file${mounted.length === 1 ? "" : "s"} mounted:`));
