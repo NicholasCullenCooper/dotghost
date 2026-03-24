@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { REGISTRY_DIR, REGISTRY_PROFILES_FILE, requireRegistry } from "./runtime.js";
+import { readTextFile, REGISTRY_DIR, REGISTRY_PROFILES_FILE, requireRegistry } from "./runtime.js";
 
 export interface RegistryProfile {
     description?: string;
@@ -205,7 +205,7 @@ export function readRegistryProfiles(): Record<string, RegistryProfile> {
         return {};
     }
 
-    const parsed = JSON.parse(fs.readFileSync(filePath, "utf-8")) as unknown;
+    const parsed = JSON.parse(readTextFile(filePath)) as unknown;
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
         throw new Error(`${REGISTRY_PROFILES_FILE} must contain a top-level object of named profiles.`);
     }

@@ -8,9 +8,13 @@ import {
   GIT_EXCLUDE_FILE,
   MANAGED_COMMENT,
   normalizeRegistryPath,
+  normalizeFsPath,
+  pathsEqual,
+  pathStartsWith,
   REGISTRY_DIR,
   STASH_DIR_NAME,
   STASH_MANIFEST,
+  stripBom,
 } from "./runtime.js";
 
 interface ManifestEntry {
@@ -33,12 +37,12 @@ export function readExclude(): string[] {
   if (!fs.existsSync(GIT_EXCLUDE_FILE)) {
     return [];
   }
-  return fs.readFileSync(GIT_EXCLUDE_FILE, "utf-8").split("\n");
+  return stripBom(fs.readFileSync(GIT_EXCLUDE_FILE, "utf-8")).split(/\r?\n/);
 }
 
 export function writeExclude(lines: string[]): void {
   const content = lines.join("\n");
-  fs.writeFileSync(GIT_EXCLUDE_FILE, content.endsWith("\n") ? content : `${content}\n`);
+  fs.writeFileSync(GIT_EXCLUDE_FILE, content.endsWith("\n") ? content : `${content}\n`, "utf-8");
 }
 
 export function addExclusion(filename: string): boolean {
@@ -71,12 +75,12 @@ export function readManifest(): StashManifest {
   if (!fs.existsSync(target)) {
     return {};
   }
-  return JSON.parse(fs.readFileSync(target, "utf-8")) as StashManifest;
+  return JSON.parse(stripBom(fs.readFileSync(target, "utf-8"))) as StashManifest;
 }
 
 export function writeManifest(manifest: StashManifest): void {
   ensureDir(stashDir());
-  fs.writeFileSync(manifestPath(), `${JSON.stringify(manifest, null, 2)}\n`);
+  fs.writeFileSync(manifestPath(), `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
 }
 
 export function stashFile(filePath: string): void {
@@ -135,11 +139,13 @@ export function findMountedRegistryLinks(root = process.cwd()): MountedRegistryL
 
       if (stat.isSymbolicLink()) {
         const actualTarget = fs.readlinkSync(fullPath);
-        const resolvedTarget = path.isAbsolute(actualTarget)
+        const rawResolved = path.isAbsolute(actualTarget)
           ? actualTarget
           : path.resolve(path.dirname(fullPath), actualTarget);
+        // Strip Windows junction \\?\ prefix for consistent comparison.
+        const resolvedTarget = rawResolved.replace(/^\\\\\?\\/, "");
 
-        if (resolvedTarget.startsWith(REGISTRY_DIR)) {
+        if (pathStartsWith(resolvedTarget, REGISTRY_DIR)) {
           const relativePath = normalizeRegistryPath(path.relative(root, fullPath));
           mountedLinks.push({
             relativePath,

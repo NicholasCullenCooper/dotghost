@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## v1.4.0
+
+Released: 2026-03-24
+
+Highlights:
+
+- full cross-platform support for Windows, macOS, and Linux
+
+Fixes:
+
+- replaced Unicode emoji output (`✔ ⚠ ✖ ℹ 🟢 ⚪️ 📦`) with ASCII-safe fallbacks on Windows terminals that lack Unicode support (Windows Terminal and VS Code terminals still get full Unicode)
+- `diff` comparison during mount conflict resolution now uses `git diff --no-index` on Windows where the system `diff` command is not available
+- fixed all symlink path comparisons (mount, unmount, check, update) to handle Windows junction `\\?\` prefix and case-insensitive filesystems
+- `.git/info/exclude` is now read with CRLF-aware line splitting
+- all file reads now strip UTF-8 BOM when present, preventing JSON parse failures on Windows-edited config files
+- `desktop.ini` added to the noise-file skip list alongside `.DS_Store` and `Thumbs.db`
+- all `writeFileSync` calls now specify explicit `"utf-8"` encoding
+- `fs.readFileSync` for `package.json` now uses a file path instead of a URL object for broader Node.js compatibility
 - added `dotghost check` to inspect mounted links for drift and missing registry sources
 - added `dotghost update` to repair relinkable mounted files locally
 

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { normalizeRegistryPath, REGISTRY_DIR, REGISTRY_IGNORE_FILE } from "./runtime.js";
+import { normalizeRegistryPath, readTextFile, REGISTRY_DIR, REGISTRY_IGNORE_FILE } from "./runtime.js";
 
 export interface MountSelection {
   forceAll: boolean;
@@ -75,8 +75,7 @@ export function readRegistryIgnorePatterns(): string[] {
     return [];
   }
 
-  return fs
-    .readFileSync(ignorePath, "utf-8")
+  return readTextFile(ignorePath)
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith("#"));

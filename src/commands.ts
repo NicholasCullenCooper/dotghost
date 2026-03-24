@@ -1,9 +1,8 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 
 import { applyRegistryIgnore, filterRegistryEntries, MountSelection, readRegistryIgnorePatterns } from "./matching.js";
-import { color, error, info, success, warn } from "./output.js";
+import { color, error, info, success, symbols, warn } from "./output.js";
 import { getProfilesFileName, getSuggestedProfileName, readRegistryProfiles } from "./profiles.js";
 import {
   cloneRegistry,
@@ -12,7 +11,10 @@ import {
   getErrorOutput,
   GIT_EXCLUDE_FILE,
   gitCmd,
+  IS_WINDOWS,
   isRegistryAGitRepo,
+  pathsEqual,
+  pathStartsWith,
   PKG,
   REGISTRY_DIR,
   registryEntries,
@@ -48,7 +50,7 @@ function topLevelRegistryPath(relativePath: string): string {
 
 function inspectMountedLinks(): DriftStatus[] {
   return findMountedRegistryLinks().map((link) => {
-    if (link.resolvedTarget === link.expectedSource && fs.existsSync(link.expectedSource)) {
+    if (pathsEqual(link.resolvedTarget, link.expectedSource) && fs.existsSync(link.expectedSource)) {
       return {
         healthy: true,
         relativePath: link.relativePath,
@@ -116,6 +118,7 @@ export function initRegistry(url?: string): void {
         "- Always explain your reasoning.",
         "",
       ].join("\n"),
+      "utf-8",
     );
     success(`Created placeholder prompt: ${placeholder}`);
   } else {
@@ -171,7 +174,7 @@ export async function mountRegistry(selection: MountSelection): Promise<void> {
     info(`Mount selection matched ${entries.length} of ${visibleEntries.length} visible registry file${visibleEntries.length === 1 ? "" : "s"}.`);
   }
 
-  const isWin = os.platform() === "win32";
+  const isWin = IS_WINDOWS;
   let linked = 0;
   let stashed = 0;
 
@@ -183,7 +186,7 @@ export async function mountRegistry(selection: MountSelection): Promise<void> {
       const stat = fs.lstatSync(target);
       if (stat.isSymbolicLink()) {
         const linkTarget = fs.readlinkSync(target);
-        if (linkTarget === source) {
+        if (pathsEqual(linkTarget, source)) {
           info(`Already linked: ${entry}`);
           continue;
         }
@@ -349,7 +352,7 @@ export function updateRegistry(): void {
     fs.unlinkSync(link.fullPath);
 
     const sourceStat = fs.statSync(link.expectedSource);
-    const symlinkType: fs.symlink.Type = sourceStat.isDirectory() ? (os.platform() === "win32" ? "junction" : "dir") : "file";
+    const symlinkType: fs.symlink.Type = sourceStat.isDirectory() ? (IS_WINDOWS ? "junction" : "dir") : "file";
     fs.symlinkSync(link.expectedSource, link.fullPath, symlinkType);
 
     const topLevel = topLevelRegistryPath(link.relativePath);
@@ -389,7 +392,7 @@ export function unmountRegistry(): void {
 
       if (stat.isSymbolicLink()) {
         const linkTarget = fs.readlinkSync(fullPath);
-        if (linkTarget.startsWith(REGISTRY_DIR)) {
+        if (pathStartsWith(linkTarget, REGISTRY_DIR)) {
           fs.unlinkSync(fullPath);
           success(`Unlinked ${path.relative(cwd, fullPath)}`);
           removed++;
@@ -438,7 +441,7 @@ export function unmountRegistry(): void {
     }
 
     const cleaned = filtered.join("\n").replace(/\n{3,}/g, "\n\n");
-    fs.writeFileSync(GIT_EXCLUDE_FILE, cleaned.endsWith("\n") ? cleaned : `${cleaned}\n`);
+    fs.writeFileSync(GIT_EXCLUDE_FILE, cleaned.endsWith("\n") ? cleaned : `${cleaned}\n`, "utf-8");
   }
 
   if (removed === 0 && restored === 0) {
@@ -461,18 +464,18 @@ export function statusRegistry(): void {
   const mounted = findMountedRegistryLinks(cwd).map((link) => link.relativePath);
 
   if (mounted.length > 0) {
-    console.log(color.green(`🟢 ${mounted.length} file${mounted.length === 1 ? "" : "s"} mounted:`));
+    console.log(color.green(`${symbols.mounted} ${mounted.length} file${mounted.length === 1 ? "" : "s"} mounted:`));
     for (const entry of mounted) {
       console.log(`   ${color.cyan(entry)} -> ~/.dotghost/${entry}`);
     }
   } else {
-    console.log("⚪️ No dotghost symlinks detected in this directory.");
+    console.log(`${symbols.unmounted} No dotghost symlinks detected in this directory.`);
   }
 
   const manifest = readManifest();
   const stashedFiles = Object.keys(manifest);
   if (stashedFiles.length > 0) {
-    console.log(color.yellow(`📦 ${stashedFiles.length} original${stashedFiles.length === 1 ? "" : "s"} stashed:`));
+    console.log(color.yellow(`${symbols.stash} ${stashedFiles.length} original${stashedFiles.length === 1 ? "" : "s"} stashed:`));
     for (const filePath of stashedFiles) {
       const stashedAt = manifest[filePath]?.stashedAt.slice(0, 10) ?? "unknown";
       console.log(`   ${color.dim(filePath)} (${stashedAt})`);
